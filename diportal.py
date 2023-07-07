@@ -13,11 +13,13 @@ from twocaptcha import TwoCaptcha
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 ########### NEED TO CUSTOMIZED ################################################################################################################
-username = "PLEASE FILL IT WITH VALID USERNAME"                             ## username for diportal.sk
-password = "PLEASE FILL IT WITH VALID PASSWORD"                             ## password for diportal.sk
-twocaptcha_api_key = "YOUR API KEY for 2captcha.com"                        ## api key for 2captcha.com service, need a subscription, place None if you would like to use just cookie mode
-recaptcha_site_key = '6LfdaLUZAAAAAHCVziF1iDFvmCxAjlIP1xF6pjHg'             ## it's a unique recatcha key for diportal site assigned by google
-debug = None                                                                ## If debug None then just clear Json output
+username = "YOUR USERNAME"                                                       ## username for diportal.sk
+password = "YOUR PASSWORD"                                                       ## password for diportal.sk
+twocaptcha_api_key = "YOUR 2captcha API KEY"                                     ## api key for 2captcha.com service, need a subscription
+recaptcha_site_key = '6LfdaLUZAAAAAHCVziF1iDFvmCxAjlIP1xF6pjHg'                  ## it's a unique recatcha key for diportal site assigned by google
+consumptionDeliveryPointId = "YOUR CONSUMPTION ID"                               ## Id of consumption eliveryPoint !Used only for short type of output where comparing production versus consumption sites
+productionDeliveryPointId = "YOUR PRODUCTION ID"                                 ## Id of production DeliveryPoint
+type_of_output = "text"                                                          ## type of output ["text","full","short"]
 ###############################################################################################################################################
 source = "KOC"
 profileRole = "null"
@@ -41,7 +43,7 @@ secchuaplatform = "\"macOS\""
 dict_main = {}
 dict_main['userData'] = {}
 dict_main['deliveryPoints'] = {}
-
+output = {}
 
 
 api_key = os.getenv('APIKEY_2CAPTCHA', twocaptcha_api_key)
@@ -173,7 +175,7 @@ def loginProcess(captcha):
     # Retrieve the CSRF value
     csrf_value = data_dict.get('x-csrf')
 
-    if debug != None: print(f"CSRF Value: {csrf_value}")
+    if type_of_output == "text": print(f"CSRF Value: {csrf_value}")
 
     return csrf_value
 
@@ -215,7 +217,7 @@ def checkUser():
     # Retrieve the CSRF value
     csrf_value = data_dict.get('x-csrf')
 
-    if debug != None: print(f"CSRF Value: {csrf_value}")
+    if type_of_output == "text": print(f"CSRF Value: {csrf_value}")
 
     return csrf_value
 
@@ -304,21 +306,34 @@ def getIntervalData(deliveryPointId0,from_date0,to_date0,profileRole0,loadProfil
 
     data = json.loads(requestDataPost(getProfileData_url, post_data))
     if "dailyIntervalData" in data["data"]["profileData"]:
-            if debug != None: print("\n{0}:".format(deliveryPointId0))
+            if type_of_output == "text": print("\n{0}:".format(deliveryPointId0))
             dict_main['deliveryPoints'][deliveryPointId0]["intervalData"] = data['data']['profileData']['dailyIntervalData']
             no = len(data["data"]["profileData"]["dailyIntervalData"])
+            total_consumption = 0
+            total_production = 0
+
             for xn in range(no):
                 if data["data"]["profileData"]["dailyIntervalData"][xn]["dailyState"] == "ALL_VALID":
                     date = data["data"]["profileData"]["dailyIntervalData"][xn]["date"]
                     consumption = data["data"]["profileData"]["dailyIntervalData"][xn]["consumption"]
                     measuredValueUnit = data["data"]["profileData"]["measuredValueUnit"]
-                    if debug != None: print("{0} - {1} {2}".format(date,consumption,measuredValueUnit))
+                    if type_of_output == "text": print("{0} - {1} {2}".format(date,consumption,measuredValueUnit))
+                    if deliveryPointId0 == consumptionDeliveryPointId:
+                        total_consumption += consumption
+                    if deliveryPointId0 == productionDeliveryPointId:
+                        total_production += consumption
+            if deliveryPointId0 == consumptionDeliveryPointId:              
+                output['consumption'] = total_consumption
+            if deliveryPointId0 == productionDeliveryPointId:
+                output['production'] = total_production
+            if (("production" in output) and ("consumption" in output)):
+                output['delta'] = output['consumption'] - output['production']
 
 def getUserData():
 
     data = json.loads(requestDataGet(getUserData_url))
     if "lastName" in data["data"]:
-            if debug != None: print("User data:")
+            if type_of_output == "text": print("User data:")
             resp = {}
             resp['lastName'] = data["data"]["lastName"]
             resp['firstName'] = data["data"]["firstName"]
@@ -326,12 +341,12 @@ def getUserData():
             resp['city'] = data["data"]["city"]
             resp['businessPartnerId'] = data["data"]["businessPartnerAssignments"][0]["businessPartnerId"]
             resp['businessRoleId'] = data["data"]["businessPartnerAssignments"][0]["businessRoleIds"][0]
-            if debug != None: print("Last Name: " + resp['lastName'])
-            if debug != None: print("First Name: " + resp['firstName'])
-            if debug != None: print("Email: " + resp['email'])
-            if debug != None: print("City: " + resp['city'])
-            if debug != None: print("businessPartnerId: " + resp['businessPartnerId'])
-            if debug != None: print("businessRoleId: " + resp['businessRoleId'] )
+            if type_of_output == "text": print("Last Name: " + resp['lastName'])
+            if type_of_output == "text": print("First Name: " + resp['firstName'])
+            if type_of_output == "text": print("Email: " + resp['email'])
+            if type_of_output == "text": print("City: " + resp['city'])
+            if type_of_output == "text": print("businessPartnerId: " + resp['businessPartnerId'])
+            if type_of_output == "text": print("businessRoleId: " + resp['businessRoleId'] )
             dict_main['userData'] = data['data']
             del dict_main['userData']['businessPartnerAssignments']
             del dict_main['userData']['roles']
@@ -353,13 +368,12 @@ def getDeliveryPoints(businessPartnerId0, businessRoleId0):
 
     data = json.loads(requestDataPost(getDeliveryPoints_url, post_data))
     if "city" in data["data"][0]:
-        #y = json.dumps(data)
-        if debug != None: print("DeliveryPoints:")
+        if type_of_output == "text": print("DeliveryPoints:")
         dict_deliveryPointId = {}
         no = len(data["data"])
         for xn in range(no):
             dict_deliveryPointId[xn] = data["data"][xn]["deliveryPointId"]
-            if debug != None: print("DeliveryPointId is "+data["data"][xn]["deliveryPointId"])
+            if type_of_output == "text": print("DeliveryPointId is "+data["data"][xn]["deliveryPointId"])
             dict_main['deliveryPoints'][data["data"][xn]["deliveryPointId"]] = {}
         return dict_deliveryPointId
 
@@ -370,12 +384,12 @@ def getDevicesForDeliveryPoints(businessPartnerId0, businessRoleId0,to_date0,del
     data = json.loads(requestDataPost(getDevicesForDeliveryPoint_url, post_data))
     if "serialNumber" in data["data"][0]:
         #y = json.dumps(data)
-        if debug != None: print("DeliveryPoints Devices:")
+        if type_of_output == "text": print("DeliveryPoints Devices:")
         dict_devices = {}
         dict_devices['serialNumber'] = data["data"][0]["serialNumber"]
-        if debug != None: print("serialNumber is "+data["data"][0]["serialNumber"])
+        if type_of_output == "text": print("serialNumber is "+data["data"][0]["serialNumber"])
         dict_devices['equipmentNumber'] = data["data"][0]["equipmentNumber"]
-        if debug != None: print("equipmentNumber is "+data["data"][0]["equipmentNumber"])
+        if type_of_output == "text": print("equipmentNumber is "+data["data"][0]["equipmentNumber"])
         return dict_devices
 
 def getRegisterData(deliveryPointId1,to_date0,deviceSerialNumber0,deviceEquipmentNumber0,businessPartnerId0,businessRoleId0):
@@ -384,7 +398,7 @@ def getRegisterData(deliveryPointId1,to_date0,deviceSerialNumber0,deviceEquipmen
 
     data = json.loads(requestDataPost(getRegisterData_url, post_data))
     if "deviceSerialNumber" in data["data"][0]:
-            if debug != None: print("\nRegistered data:")
+            if type_of_output == "text": print("\nRegistered data:")
             dict_main['deliveryPoints'][deliveryPointId1]["registerData"] = data['data']
             no = len(data["data"])
             for xn in range(no):
@@ -392,7 +406,7 @@ def getRegisterData(deliveryPointId1,to_date0,deviceSerialNumber0,deviceEquipmen
                     settlementDate = data["data"][xn]["settlementDate"]
                     counterId = data["data"][xn]["counterId"]
                     settlementState = data["data"][xn]["settlementState"];
-                    if debug != None: print("{0} - {1} {2} kWh".format(settlementDate,counterId,settlementState))
+                    if type_of_output == "text": print("{0} - {1} {2} kWh".format(settlementDate,counterId,settlementState))
 
 
 #### MAIN PART ####
@@ -401,7 +415,7 @@ def getRegisterData(deliveryPointId1,to_date0,deviceSerialNumber0,deviceEquipmen
 if (os.path.isfile(cookie_file)):
     xcsrf = checkUser()
     if xcsrf != None:
-        if debug != None: print("We got valid cookies")
+        if type_of_output == "text": print("We got valid cookies")
         user_data = getUserData()
         deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
         for key in deliveryPoints:
@@ -410,7 +424,7 @@ if (os.path.isfile(cookie_file)):
             getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
         
     else:
-        if debug != None: print("Cookies already expired")
+        if type_of_output == "text": print("Cookies already expired")
         if twocaptcha_api_key != None:
             xcsrf = loginProcess(reCaptcha())
             user_data = getUserData()
@@ -420,10 +434,10 @@ if (os.path.isfile(cookie_file)):
                 devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
                 getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
         else:
-            if debug != None: print("Missing 2captcha api key!")
+            if type_of_output == "text": print("Missing 2captcha api key!")
 else:
     if twocaptcha_api_key != None:
-        if debug != None: print("Fresh login process initiated")
+        if type_of_output == "text": print("Fresh login process initiated")
         xcsrf = loginProcess(reCaptcha())
         user_data = getUserData()
         deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
@@ -432,7 +446,8 @@ else:
             devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
             getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
     else:
-        if debug != None: print("Missing 2captcha api key!")
+        if type_of_output == "text": print("Missing 2captcha api key!")
 
 
-print(json.dumps(dict_main, indent=2))
+if type_of_output == "full": print(json.dumps(dict_main, indent=2))
+if type_of_output == "short": print(json.dumps(output, indent=2))
