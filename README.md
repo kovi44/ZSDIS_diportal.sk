@@ -8,5 +8,11 @@ The diportal is secured by Google reCaptcha. Due to that fact there exist two po
 
 With reCaptcha enabled the script runs for more then 30-40sec. 
 
+
+OUTPUT of the script | 3 different types | you can define via variable<br/>
+text - it will output some data in pure text form, fine for debuging<br/>
+short - it's used like for my case where I just need to find the delta between production and consumption site [FVE powerplant production versus House consumption]<br/>
+full - it's the complete output of diportal useful data such as register or interval data, you can used to built nice graph via grafana or do deeper analysis<br/>
+
 Notes: this is just a proof of concept!
 
