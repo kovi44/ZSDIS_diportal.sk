@@ -417,22 +417,49 @@ if (os.path.isfile(cookie_file)):
     if xcsrf != None:
         if type_of_output == "text": print("We got valid cookies")
         user_data = getUserData()
-        deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
-        for key in deliveryPoints:
-            getIntervalData(deliveryPoints[key],from_date,to_date,profileRole,loadProfileRoles,user_data['businessPartnerId'],user_data['businessRoleId'],source)
-            devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
-            getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
+        if (user_data != None):
+            deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
+            for key in deliveryPoints:
+                getIntervalData(deliveryPoints[key],from_date,to_date,profileRole,loadProfileRoles,user_data['businessPartnerId'],user_data['businessRoleId'],source)
+                devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
+                getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
+        else:
+            if twocaptcha_api_key != None:
+                if type_of_output == "text": print("Fresh login process initiated")
+                xcsrf = loginProcess(reCaptcha())
+                user_data = getUserData()
+                deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
+                for key in deliveryPoints:
+                    getIntervalData(deliveryPoints[key],from_date,to_date,profileRole,loadProfileRoles,user_data['businessPartnerId'],user_data['businessRoleId'],source)
+                    devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
+                    getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
+            else:
+                if type_of_output == "text": print("Missing 2captcha api key!") 
         
     else:
         if type_of_output == "text": print("Cookies already expired")
         if twocaptcha_api_key != None:
             xcsrf = loginProcess(reCaptcha())
             user_data = getUserData()
-            deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
-            for key in deliveryPoints:
-                getIntervalData(deliveryPoints[key],from_date,to_date,profileRole,loadProfileRoles,user_data['businessPartnerId'],user_data['businessRoleId'],source)
-                devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
-                getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
+            if (user_data != None):
+                deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
+                for key in deliveryPoints:
+                    getIntervalData(deliveryPoints[key],from_date,to_date,profileRole,loadProfileRoles,user_data['businessPartnerId'],user_data['businessRoleId'],source)
+                    devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
+                    getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
+            else:
+                if twocaptcha_api_key != None:
+                    if type_of_output == "text": print("Fresh login process initiated")
+                    xcsrf = loginProcess(reCaptcha())
+                    user_data = getUserData()
+                    deliveryPoints = getDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'])
+                    for key in deliveryPoints:
+                        getIntervalData(deliveryPoints[key],from_date,to_date,profileRole,loadProfileRoles,user_data['businessPartnerId'],user_data['businessRoleId'],source)
+                        devices = getDevicesForDeliveryPoints(user_data['businessPartnerId'], user_data['businessRoleId'],to_date,deliveryPoints[key])
+                        getRegisterData(deliveryPoints[key],to_date,devices['serialNumber'],devices['equipmentNumber'],user_data['businessPartnerId'],user_data['businessRoleId'])
+                else:
+                    if type_of_output == "text": print("Missing 2captcha api key!") 
+                
         else:
             if type_of_output == "text": print("Missing 2captcha api key!")
 else:
